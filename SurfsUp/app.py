@@ -12,7 +12,7 @@ from sqlalchemy import create_engine, func
 from flask import Flask, jsonify
 
 # Database Setup
-engine = create_engine("sqlite:///Resources/hawaii.sqlite")
+engine = create_engine("sqlite:///../Resources/hawaii.sqlite")
 
 # reflect an existing database into a new model
 Base = automap_base()
@@ -33,7 +33,7 @@ app = Flask(__name__)
 # Flask Routes
 # Creating routes of "/", "/api/v1.0/precipitation", "/api/v1.0/stations", "/api/v1.0/tobs", "/api/v1.0/<start>", and "/api/v1.0/<start>/<end>"
 
-app.route("/")
+@app.route("/")
 def welcome():
     return(
         f"Welcome to the homepage of my Hawaii Climate API<br>"
@@ -49,7 +49,7 @@ def welcome():
     )
 
 #Percipitation
-app.route("/api/v1.0/precipitation")
+@app.route("/api/v1.0/precipitation")
 def percipitation():
     session = Session(engine)
     year = dt.date(2017, 8, 23)-dt.timedelta(days=365)
@@ -62,7 +62,7 @@ def percipitation():
     return jsonify(p_dict)
 
 #Stations
-app.route("/api/v1.0/stations")
+@app.route("/api/v1.0/stations")
 def stations():
     session = Session(engine)
     sel = [station.station, station.name, station.latitude, station.longitude, station.elevation]
@@ -84,20 +84,18 @@ def stations():
 @app.route("/api/v1.0/tobs")
 def tobs():
     session = Session(engine)
-    year = dt.date(2017, 8, 23)-dt.timedelta(days=365)
-    previous_year = dt.date(percipitation.year, percipitation.month, percipitation.day)
-    tobs_results = session.query(measurement.tobs).filter(measurement.station=='USC00519281').filter(measurement.date>=previous_year).all()
+    tobs_results = session.query(measurement.tobs).filter(measurement.station=='USC00519281').filter(measurement.date>='2016-08-23').all()
 
-    tobs = []
+    tobs_list = []
     for date, tobs in tobs_results:
         tobs_dict={}
         tobs_dict['Date']=date
         tobs_dict['Tobs']=tobs
-        tobs.append(tobs_dict)
+        tobs_list.append(tobs_dict)
     return jsonify(tobs)
 
 #Start
-app.route("/api/v1.0/<start>")
+@app.route("/api/v1.0/<start>")
 def start_temp(start):
     session = Session(engine)
     results = session.query(func.min(measurement.tobs), func.avg(measurement.tobs), func.max(measurement.tobs)).filter(measurement.date >= start).all()
@@ -113,7 +111,7 @@ def start_temp(start):
     return jsonify(temps)
 
 #Start/End
-app.route("/api/v1.0/<start>/<end>")
+@app.route("/api/v1.0/<start>/<end>")
 def start_end_temps(start,end):
     session = Session(engine)
     results = session.query(func.min(measurement.tobs), func.avg(measurement.tobs), func.max(measurement.tobs)).filter(measurement.date >= start).filter(measurement.date <= end).all()
