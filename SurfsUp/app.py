@@ -12,7 +12,7 @@ from sqlalchemy import create_engine, func
 from flask import Flask, jsonify
 
 # Database Setup
-engine = create_engine("sqlite:///../Resources/hawaii.sqlite")
+engine = create_engine("sqlite:///Resources/hawaii.sqlite")
 
 # reflect an existing database into a new model
 Base = automap_base()
@@ -22,7 +22,7 @@ Base.prepare(autoload_with=engine)
 
 # Save references to each table
 measurement = Base.classes.measurement
-station = Base.classes.station
+Station = Base.classes.station
 
 # Create our session (link) from Python to the DB
 session = Session(engine)
@@ -41,11 +41,8 @@ def welcome():
         f"/api/v1.0/precipitation<br>"
         f"/api/v1.0/stations<br>"
         f"/api/v1.0/tobs<br>"
-        f"For the next two:"
-        f"Enter start date as: YYYY-MM-DD"
-        f"Enter start/end date as: YYYY-MM-DD/YYYY-MM-DD"
-        f"/api/v1.0/<start><br>"
-        f"/api/v1.0/<start>/<end><br>"
+        f"/api/v1.0/<start> (enter as YYYY-MM-DD)<br>"
+        f"/api/v1.0/<start>/<end> (enter as YYYY-MM-DD/YYYY-MM-DD)<br>"
     )
 
 #Percipitation
@@ -53,7 +50,7 @@ def welcome():
 def percipitation():
     session = Session(engine)
     year = dt.date(2017, 8, 23)-dt.timedelta(days=365)
-    previous_year = dt.date(percipitation.year, percipitation.month, percipitation.day)
+    previous_year = dt.date(year.year, year.month, year.day)
     results = session.query(measurement.date, measurement.prcp).filter(measurement.date>=previous_year).order_by(measurement.date.desc()).all()
     p_dict = dict(results)
 
@@ -65,7 +62,7 @@ def percipitation():
 @app.route("/api/v1.0/stations")
 def stations():
     session = Session(engine)
-    sel = [station.station, station.name, station.latitude, station.longitude, station.elevation]
+    sel = [Station.station, Station.name, Station.latitude, Station.longitude, Station.elevation]
     s_results = session.query(*sel).all()
     session.close()
 
@@ -84,7 +81,7 @@ def stations():
 @app.route("/api/v1.0/tobs")
 def tobs():
     session = Session(engine)
-    tobs_results = session.query(measurement.tobs).filter(measurement.station=='USC00519281').filter(measurement.date>='2016-08-23').all()
+    tobs_results = session.query(measurement.date, measurement.tobs).filter(measurement.station=='USC00519281').filter(measurement.date>='2016-08-23').all()
 
     tobs_list = []
     for date, tobs in tobs_results:
@@ -92,6 +89,7 @@ def tobs():
         tobs_dict['Date']=date
         tobs_dict['Tobs']=tobs
         tobs_list.append(tobs_dict)
+
     return jsonify(tobs)
 
 #Start
